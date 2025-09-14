@@ -1,0 +1,13 @@
+#!/bin/sh
+branch="$(git symbolic-ref --short HEAD)"
+pattern="^(feature|bugfix|hotfix|release)\/[a-z0-9._-]+$"
+
+if ! echo "$branch" | grep -Eq "$pattern"; then
+  echo "🚫 Nom de branche invalide : $branch"
+  echo "✨ Format attendu : feature/<desc>, bugfix/<ticket-id>, hotfix/<desc>, release/<version>"
+  echo "⚠️  Veuillez renommer votre branche avant de pousser."
+  echo "💡 Exemple de commandes :"
+  echo "  🔄 git branch -m $branch <new-branch-name>"
+  echo "  ⬆️  git push origin -u <new-branch-name>"
+  exit 1
+fi
