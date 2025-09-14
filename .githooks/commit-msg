@@ -1,0 +1,16 @@
+#!/usr/bin/env python3
+import sys
+import re
+
+commit_msg_file = sys.argv[1]
+msg = open(commit_msg_file).read().strip()
+
+pattern = r"^(feat|fix|docs|style|refactor|perf|test|chore)(\(.+\))?: .+$"
+
+if not re.match(pattern, msg):
+    print("❌ Commit message invalide :", msg)
+    print("✅ Format attendu : type(scope): description")
+    print("   Exemples :")
+    print("     feat(api): add user authentication")
+    print("     fix(ui): correct button alignment")
+    sys.exit(1)
