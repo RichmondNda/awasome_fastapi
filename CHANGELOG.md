@@ -8,7 +8,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 <!-- insertion marker -->
 ## Unreleased
 
-<small>[Compare with latest](https://github.com/RichmondNda/awasome_fastapi/compare/7e4ae2453a2aa9075432ef9fb6cdb17f8fa5a765...HEAD)</small>
+<small>[Compare with latest](https://github.com/RichmondNda/awasome_fastapi/compare/e3552f06169ba61bf60e54cffe3d5f2965e022eb...HEAD)</small>
 
 ### Features
 

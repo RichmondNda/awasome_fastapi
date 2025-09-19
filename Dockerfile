@@ -1,39 +1,62 @@
-# ─────────────────────────────
-# STAGE 1: Build dependencies
-# ─────────────────────────────
-FROM python:3.11-slim AS builder
+# Multi-stage build for production FastAPI microservice
+FROM python:3.11-slim as base
 
-WORKDIR /app
+# Set environment variables
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PIP_NO_CACHE_DIR=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1
 
-# System deps (if needed for wheels)
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    build-essential \
+# Create app user for security
+RUN groupadd -r appuser && useradd -r -g appuser appuser
+
+# Install system dependencies
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+        curl \
+        gcc \
+        libc6-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy only what we need for installing dependencies
-COPY requirements.txt .
-
-# Install dependencies into a clean folder
-RUN pip install --upgrade pip && \
-    pip install --no-cache-dir --prefix=/install -r requirements.txt
-
-# ─────────────────────────────
-# STAGE 2: Final minimal image
-# ─────────────────────────────
-FROM python:3.11-slim
-
+# Set work directory
 WORKDIR /app
 
-# Copy installed dependencies from builder
-COPY --from=builder /install /usr/local
+# Copy requirements first for better caching
+COPY requirements.txt .
 
-# Copy app source code
-COPY ./app /app
+# Install Python dependencies
+RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy .env if needed at runtime (or use env vars in docker-compose)
-# COPY .env .
+# Copy application code
+COPY app/ ./app/
+COPY docker-start.sh ./docker-start.sh
+COPY .env.example ./.env
 
+# Make start script executable
+RUN chmod +x ./docker-start.sh
+
+# Change ownership of the app directory
+RUN chown -R appuser:appuser /app
+
+# Switch to non-root user
+USER appuser
+
+# Expose port
 EXPOSE 8000
 
-# Start FastAPI
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Health check
+HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:8000/api/v1/system/health/live || exit 1
+
+# Run the application
+CMD ["./docker-start.sh"]
+
+# Production stage
+FROM base as production
+
+ENV ENVIRONMENT=production \
+    DEBUG=false \
+    LOG_LEVEL=WARNING
+
+# Use multiple workers in production
+CMD ["./docker-start.sh"]
